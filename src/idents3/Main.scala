@@ -46,32 +46,8 @@ object Main {
 		}
 	}
 
-	// Reduce phase
-	class MergeActor extends Actor {
-		def act() {
-			react {
-				case (a: Result, b: Result) =>
-					val result = new MResult
-					result ++= a
-			    	b foreach { case (token, fileMap) => 
-			    		fileMap foreach { case (fileName, count) =>
-			    			processToken(result, token, fileName, count)
-			    		}
-			    	}
-					
-					if (assert) {
-						val ac = deepCount(a)
-						val bc = deepCount(b)
-						val rc = deepCount(result)
-						if (rc != (ac+bc)) System.err.println("error " + rc + " != " + ac + " + " + bc)
-					}
-					
-					sender ! (new Result ++ result)
-			}
-		}
-	}
-
 	case class MapperMsg
+	case class AddComputer(f : File) extends MapperMsg
 	case class AddMapper(dir : File) extends MapperMsg
 	case class MapperDone(dir : File) extends MapperMsg
 
@@ -79,31 +55,26 @@ object Main {
 	class MergeDispatchActor(parent: Actor) extends Actor {
 		var totalMappers = 1 // counts the total number of directories
 		var completedMappers = 0 // counds the number of finished directories
-		var totalReducers = 0
-		var completedReducers = 0
-		val resultQueue = new Queue[Result]
+		var totalComputers = 0 // counts the total number of directories
+		var completedComputers = 0 // counds the number of finished directories
+		val result = new MResult
+		
 
 		def act() {
-			// Seed queue - allows completion when no files are found at the cost of an extra merge
-			resultQueue enqueue new Result
 			loop {
 				react {
 					// Reduce
 					case partialResult: Result => 
-						resultQueue enqueue partialResult
-						if (sender.isInstanceOf[MergeActor]) {
-							completedReducers += 1
-							checkIfDone
-						}
-			 	  	  	while (resultQueue.length >= 2) {
-			 	  	  		val merger = new MergeActor().start
-			 	  	  		val a = resultQueue.dequeue
-			 	  	  		val b = resultQueue.dequeue
-			 	  	  		merger ! (a, b)
-			 	  	  		totalReducers += 1
-			 	  	  		if (debug) System.err.println("Completed reducers " + completedReducers + " of " + totalReducers)
-			 	  	  	}
+				    	partialResult foreach { case (token, fileMap) => 
+				    		fileMap foreach { case (fileName, count) =>
+				    			processToken(result, token, fileName, count)
+				    		}
+				    	}
+				    	completedComputers += 1
+						checkIfDone
 					// Progress tracking
+					case _: AddComputer =>
+						totalComputers += 1
 					case _: AddMapper =>
 						totalMappers += 1
 					case _: MapperDone =>
@@ -115,8 +86,8 @@ object Main {
 		}
 
 		def checkIfDone {
-			if (resultQueue.length == 1 && completedMappers == totalMappers && completedReducers == totalReducers) {
-				parent ! resultQueue.dequeue
+			if (completedMappers == totalMappers && completedComputers == totalComputers) {
+				parent ! result
 				this.exit // terminate this Actor. qualify to explicitly disambiguate from Predef.exit
 			}
 		}
@@ -133,6 +104,7 @@ object Main {
 							new DirectoryActor(mergeDispatch).start ! f
 						} else {
 							if (isInteresting(f.getName)) {
+								mergeDispatch ! new AddComputer(f)
 								new FileActor(mergeDispatch).start ! f
 							}
 						}
@@ -146,7 +118,7 @@ object Main {
 		val mergeDispatch = new MergeDispatchActor(self).start
 		new DirectoryActor(mergeDispatch).start ! dir
 		self receive {
-			case result: Result => result
+			case result: MResult => result
 		}
 	}
 
