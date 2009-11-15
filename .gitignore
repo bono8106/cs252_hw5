@@ -1,0 +1,8 @@
+bin
+srczip
+.scala_dependencies
+*.0
+*.1
+*.2
+*.3
+*.4
