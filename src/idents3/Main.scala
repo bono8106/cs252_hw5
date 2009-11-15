@@ -27,7 +27,6 @@ object Main {
 
 	def isInteresting(name : String) = name.endsWith(".java") || name.endsWith(".scala")
 
-	case class ReducerDone(result: Result)
 	case class ComputerDone(result: Result)
 
 	// Compute phase
@@ -48,13 +47,9 @@ object Main {
 
 	case class MapperMsg
 	case class AddComputer(f : File) extends MapperMsg
-	case class AddMapper(dir : File) extends MapperMsg
-	case class MapperDone(dir : File) extends MapperMsg
 
 	// Reduce phase coordinator and progress tracker
 	class MergeDispatchActor(parent: Actor) extends Actor {
-		var totalMappers = 1 // counts the total number of directories
-		var completedMappers = 0 // counds the number of finished directories
 		var totalComputers = 0 // counts the total number of directories
 		var completedComputers = 0 // counds the number of finished directories
 		val result = new MResult
@@ -71,52 +66,33 @@ object Main {
 				    		}
 				    	}
 				    	completedComputers += 1
-						checkIfDone
+						
+						if (completedComputers == totalComputers) {
+							parent ! result
+							this.exit // terminate this Actor. qualify to explicitly disambiguate from Predef.exit
+						}
 					// Progress tracking
-					case _: AddComputer =>
+					case c: AddComputer =>
 						totalComputers += 1
-					case _: AddMapper =>
-						totalMappers += 1
-					case _: MapperDone =>
-						completedMappers += 1
-						if (debug) System.err.println("Completed mappers " + completedMappers + " of " + totalMappers)
-						checkIfDone
+						new FileActor(this).start ! c.f
 				}
 			}
 		}
 
-		def checkIfDone {
-			if (completedMappers == totalMappers && completedComputers == totalComputers) {
-				parent ! result
-				this.exit // terminate this Actor. qualify to explicitly disambiguate from Predef.exit
-			}
-		}
 	}
 
-	// Map phase
-	class DirectoryActor(mergeDispatch: Actor) extends Actor {
-		def act() {
-			react {
-				case dir : File =>
-					dir.listFiles foreach { f => 
-						if (f.isDirectory) {
-							mergeDispatch ! new AddMapper(f) // one more directory to process before completion
-							new DirectoryActor(mergeDispatch).start ! f
-						} else {
-							if (isInteresting(f.getName)) {
-								mergeDispatch ! new AddComputer(f)
-								new FileActor(mergeDispatch).start ! f
-							}
-						}
-					}
-					mergeDispatch ! new MapperDone(dir) // done with this directory
-			}
-		}
-	}
+  def doProcessDirectory(dir : File, mergeDispatch: Actor) {
+	  dir.listFiles foreach { f => 
+      if (f.isDirectory) 
+        doProcessDirectory(f, mergeDispatch) else 
+        if (isInteresting(f.getName)) 
+          mergeDispatch ! new AddComputer(f)
+    }
+  }
 
 	def processDirectory(dir : File) = {
 		val mergeDispatch = new MergeDispatchActor(self).start
-		new DirectoryActor(mergeDispatch).start ! dir
+		doProcessDirectory(dir, mergeDispatch)
 		self receive {
 			case result: MResult => result
 		}
