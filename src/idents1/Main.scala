@@ -11,14 +11,20 @@ object Main {
 	val cresult = new ConcurrentHashMap[String, ConcurrentHashMap[String, AtomicInteger]]
    val result = new HashMap[String, TreeMap[String, Int]]
 
-  def getWithDefault[K, V](map: ConcurrentHashMap[K, V], k: K, v: V) = {
-	  val result = map.putIfAbsent(k, v)
-	  if (result == null) v else result
+  def getWithDefault[K, V](map: ConcurrentHashMap[K, V], k: K, vf: () => V) = {
+	  //val result = map.get(k)
+	  //if (result == null) {
+	 	  val default = vf()
+	 	  val otherval = map.putIfAbsent(k, default)
+	 	  if (otherval == null) default else otherval
+	  //} else {
+	 //	  result
+	  //}
   }
 
   def processToken(f: String, token : String) {
-    val fileMap = getWithDefault(cresult, token, { new ConcurrentHashMap[String, AtomicInteger] })
-    val count = getWithDefault(fileMap, f, new AtomicInteger(0))
+    val fileMap = getWithDefault(cresult, token, { () => new ConcurrentHashMap[String, AtomicInteger] })
+    val count = getWithDefault(fileMap, f, { () => new AtomicInteger(0) })
     count.incrementAndGet
   }
 
@@ -40,7 +46,7 @@ object Main {
   }
 
   def processDirectory(dir : File) {
-      val nThreads = Runtime.getRuntime.availableProcessors*2
+      val nThreads = Runtime.getRuntime.availableProcessors
       //System.err.println("Running " + nThreads)
 	  val executor = new ThreadPoolExecutor(nThreads, nThreads, 
 	 		  1000, TimeUnit.MILLISECONDS, 
@@ -72,6 +78,8 @@ object Main {
     val start = System.currentTimeMillis
     processDirectory(new File(dirName))
     val end = System.currentTimeMillis
+
+    System.err.println("Milliseconds: " + (end - start))
     
 	  val it = cresult.entrySet.iterator 
       while (it hasNext) {
@@ -91,8 +99,6 @@ object Main {
     	}
     }
 
-    System.err.println("Milliseconds: " + (end - start))
-
     if (!dump) {
 	    print("Enter identifier: ")
 	    val in = new Scanner(System.in)
@@ -109,4 +115,5 @@ object Main {
 	    println()
     }
   }
+
 }
