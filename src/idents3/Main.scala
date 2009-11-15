@@ -171,14 +171,14 @@ object Main {
     val result = processDirectory(new File(dirName))
     val end = System.currentTimeMillis
     
+    System.err.println("Milliseconds: " + (end - start))
+
     if (dump) {
     	val sorted = new TreeMap[String, TreeMap[String, Int]] ++ result
     	sorted foreach { case (key, value) => 
     		println(value.mkString("" + key + " {\n", "\n", "\n}"))
     	}
     }
-
-    System.err.println("Milliseconds: " + (end - start))
 
     if (!dump) {
 	    print("Enter identifier: ")
