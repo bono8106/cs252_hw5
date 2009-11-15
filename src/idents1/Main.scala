@@ -12,14 +12,14 @@ object Main {
    val result = new HashMap[String, TreeMap[String, Int]]
 
   def getWithDefault[K, V](map: ConcurrentHashMap[K, V], k: K, vf: () => V) = {
-	  //val result = map.get(k)
-	  //if (result == null) {
-	 	  val default = vf()
+ 	  val res = map.get(k)
+ 	  if (res == null) {
+		  val default = vf()
 	 	  val otherval = map.putIfAbsent(k, default)
 	 	  if (otherval == null) default else otherval
-	  //} else {
-	 //	  result
-	  //}
+ 	  } else {
+ 	 	  res
+ 	  }
   }
 
   def processToken(f: String, token : String) {
@@ -32,6 +32,7 @@ object Main {
     val in = new java.util.Scanner(f)
     in.useDelimiter("[^A-Za-z0-9_]+")
     while (in.hasNext) processToken(f.getPath, in.next)
+    in.close
   }
 
   def isInteresting(name : String) = name.endsWith(".java") || name.endsWith(".scala")
@@ -47,7 +48,6 @@ object Main {
 
   def processDirectory(dir : File) {
       val nThreads = Runtime.getRuntime.availableProcessors
-      //System.err.println("Running " + nThreads)
 	  val executor = new ThreadPoolExecutor(nThreads, nThreads, 
 	 		  1000, TimeUnit.MILLISECONDS, 
 	 		  new ArrayBlockingQueue[Runnable](nThreads * 10),
@@ -94,7 +94,7 @@ object Main {
     if (dump) {
     	val sorted: TreeMap[String, TreeMap[String, Int]] = new TreeMap[String, TreeMap[String, Int]] ++ result
     	
-    	sorted foreach { case (key, value) => 
+    	sorted foreach { case (key, value) =>
     		println(value.mkString("" + key + " {\n", "\n", "\n}"))
     	}
     }
