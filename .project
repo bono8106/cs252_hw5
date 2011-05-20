@@ -15,12 +15,4 @@
 		<nature>ch.epfl.lamp.sdt.core.scalanature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
-	<filteredResources>
-		<filter>
-			<name>srczip</name>
-			<type>10</type>
-			<id>org.eclipse.ui.ide.stringMatcherFilter</id>
-			<arguments>*</arguments>
-		</filter>
-	</filteredResources>
 </projectDescription>
