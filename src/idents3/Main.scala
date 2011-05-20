@@ -45,8 +45,7 @@ object Main {
 		}
 	}
 
-	case class MapperMsg
-	case class AddComputer(f : File) extends MapperMsg
+	case class AddComputer(f : File)
 
 	// Reduce phase coordinator and progress tracker
 	class MergeDispatchActor(parent: Actor) extends Actor {
@@ -72,9 +71,9 @@ object Main {
 							this.exit // terminate this Actor. qualify to explicitly disambiguate from Predef.exit
 						}
 					// Progress tracking
-					case c: AddComputer =>
+					case AddComputer(file) =>
 						totalComputers += 1
-						new FileActor(this).start ! c.f
+						new FileActor(this).start ! file
 				}
 			}
 		}
