@@ -53,7 +53,7 @@ object Main {
   }
 	   
   def processDirectory(dir : File): Result = { 
-      val nThreads = Runtime.getRuntime.availableProcessors*2
+      val nThreads = Runtime.getRuntime.availableProcessors
       val fjPool = new ForkJoinPool(nThreads)
       fjPool.invoke(new DirectoryTask(dir))
   }
