@@ -27,8 +27,6 @@ object Main {
 
 	def isInteresting(name : String) = name.endsWith(".java") || name.endsWith(".scala")
 
-	case class ComputerDone(result: Result)
-
 	// Compute phase
 	class FileActor(mergeDispatch: Actor) extends Actor {
 		def act() {
@@ -40,7 +38,7 @@ object Main {
 					var count = 0
 					while (in.hasNext) { processToken(result, in.next, f.getPath, 1); count+=1 }
 					if (assert) if (count != deepCount(result)) System.err.println("error " + deepCount(result) + " != " + count)
-					mergeDispatch ! (new Result ++ result)
+					mergeDispatch ! (result)
 			}
 		}
 	}
@@ -49,30 +47,28 @@ object Main {
 
 	// Reduce phase coordinator and progress tracker
 	class MergeDispatchActor(parent: Actor) extends Actor {
-		var totalComputers = 0 // counts the total number of directories
-		var completedComputers = 0 // counds the number of finished directories
+		var workingComputers = 0 // counts the total number of directories
 		val result = new MResult
-		
 
 		def act() {
 			loop {
 				react {
 					// Reduce
-					case partialResult: Result => 
+					case partialResult: MResult => 
 				    	partialResult foreach { case (token, fileMap) => 
 				    		fileMap foreach { case (fileName, count) =>
 				    			processToken(result, token, fileName, count)
 				    		}
 				    	}
-				    	completedComputers += 1
-						
-						if (completedComputers == totalComputers) {
+				    	workingComputers -= 1
+				    	
+						if (workingComputers == 0) {
 							parent ! result
 							this.exit // terminate this Actor. qualify to explicitly disambiguate from Predef.exit
 						}
 					// Progress tracking
 					case AddComputer(file) =>
-						totalComputers += 1
+						workingComputers += 1
 						new FileActor(this).start ! file
 				}
 			}
@@ -122,6 +118,7 @@ object Main {
 
     if (dump) {
     	val sorted = new TreeMap[String, TreeMap[String, Int]] ++ result
+    	System.err.println("Milliseconds+sort: " + (System.currentTimeMillis - start))
     	sorted foreach { case (key, value) => 
     		println(value.mkString("" + key + " {\n", "\n", "\n}"))
     	}

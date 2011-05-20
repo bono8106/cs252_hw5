@@ -56,6 +56,7 @@ object Main {
 
     if (dump) {
     	val sorted = new TreeMap[String, TreeMap[String, Int]] ++ result
+    	System.err.println("Milliseconds+sort: " + (System.currentTimeMillis - start))
     	sorted foreach { case (key, value) => 
     		println(value.mkString("" + key + " {\n", "\n", "\n}"))
     	}

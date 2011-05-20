@@ -17,6 +17,26 @@ object Main {
   val counterLock = new ReentrantLock()
   val counterDone = counterLock.newCondition
 
+  def schedTask(f:  => Unit) {
+	counterLock.lock
+	try {
+	  counter = counter + 1
+	} finally {
+	  counterLock.unlock
+	}
+    runner execute { () =>
+      f
+	  counterLock.lock
+	  try {
+		  counter = counter - 1
+		  if (counter == 0)
+		 	  counterDone.signal
+	  } finally {
+	 	  counterLock.unlock
+	  }
+    }
+  }
+
   def processToken(f: String, token : String) {
 	  resultLock.acquire
 	  try {
@@ -37,36 +57,23 @@ object Main {
   def isInteresting(name : String) = name.endsWith(".java") || name.endsWith(".scala")
 
   def doProcessDirectory(dir : File) {
-	  dir.listFiles foreach { f => 
+	dir.listFiles foreach { f => 
 	  if (f.isDirectory) {
-		  counterLock.lock
-		  try {
-			  counter = counter + 1
-		  } finally {
-		 	  counterLock.unlock
-		  }
-		  runner execute { () => doProcessDirectory(f) }
+		  schedTask { doProcessDirectory(f) }
       } else {
-    	  if (isInteresting(f.getName)) 
+    	  if (isInteresting(f.getName)) {
     		  processFile(f)
+    	  }
       }
-	  }
-	  counterLock.lock
-	  try {
-		  counter = counter - 1
-		  if (counter == 0)
-		 	  counterDone.signal
-	  } finally {
-	 	  counterLock.unlock
-	  }
+	}
   }
   
   def processDirectory(dir : File) {
 	  counterLock.lock
 	  try {
-		  counter = 1
-		  runner execute { () => doProcessDirectory(dir) }
-		  counterDone.await
+		  counter = 0
+		  schedTask { doProcessDirectory(dir) }
+		  while (counter > 0) counterDone.await
 	  } finally {
 	 	  counterLock.unlock
 	  }
@@ -97,6 +104,7 @@ object Main {
 
     if (dump) {
     	val sorted = new TreeMap[String, TreeMap[String, Int]] ++ result
+    	System.err.println("Milliseconds+sort: " + (System.currentTimeMillis - start))
     	sorted foreach { case (key, value) => 
     		println(value.mkString("" + key + " {\n", "\n", "\n}"))
     	}

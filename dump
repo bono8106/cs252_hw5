@@ -1,4 +1,4 @@
 #!/bin/bash
 alg=$1
 dir=$2
-scala -cp bin:jsr166y.jar idents$alg.Main -d srczip/$dir > ${dir/./_}.$alg
+scala -cp "bin;jsr166y.jar" idents$alg.Main -d srczip/$dir > ${dir/./_}.$alg
