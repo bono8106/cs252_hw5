@@ -13,20 +13,24 @@ object Main {
 	val cresult = new ConcurrentHashMap[String, ConcurrentHashMap[String, AtomicInteger]]
    val result = new HashMap[String, TreeMap[String, Int]]
 
-  def getWithDefault[K, V](map: ConcurrentHashMap[K, V], k: K, vf: () => V) = {
- 	  val res = map.get(k)
- 	  if (res == null) {
-		  val default = vf()
-	 	  val otherval = map.putIfAbsent(k, default)
-	 	  if (otherval == null) default else otherval
- 	  } else {
- 	 	  res
- 	  }
+  implicit def chm2enh[K, V](map: ConcurrentHashMap[K, V]) = new ChmWithUpdate(map)
+
+  class ChmWithUpdate[K, V](map: ConcurrentHashMap[K, V]) {
+    def getOrElseUpdate(k: K, vf: => V): V = {
+   	  val res = map.get(k)
+ 	    if (res == null) {
+		    val default = vf
+	 	    val otherval = map.putIfAbsent(k, default)
+	 	    if (otherval == null) default else otherval
+ 	    } else {
+ 	 	    res
+ 	    }
+    }
   }
 
-  def processToken(f: String, token : String) {
-    val fileMap = getWithDefault(cresult, token, { () => new ConcurrentHashMap[String, AtomicInteger] })
-    val count = getWithDefault(fileMap, f, { () => new AtomicInteger(0) })
+  def processToken(f: String, token: String) {
+    val fileMap = cresult.getOrElseUpdate(token, new ConcurrentHashMap[String, AtomicInteger])
+    val count = fileMap.getOrElseUpdate(f, new AtomicInteger(0))
     count.incrementAndGet
   }
 
@@ -51,7 +55,7 @@ object Main {
       val nThreads = Runtime.getRuntime.availableProcessors
 	  val executor = new ThreadPoolExecutor(nThreads, nThreads, 
 	 		  1000, TimeUnit.MILLISECONDS, 
-	 		  new ArrayBlockingQueue[Runnable](nThreads * 10),
+	 		  new LinkedBlockingQueue[Runnable](nThreads * 10000),
 	 		  new ThreadPoolExecutor.CallerRunsPolicy)
       doProcessDirectory(dir, executor)
       executor.shutdown
