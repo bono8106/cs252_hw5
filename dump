@@ -1,4 +1,5 @@
 #!/bin/bash
 alg=$1
 dir=$2
-scala -J-Xmx2g -cp target/scala-*/classes idents$alg.Main -d srczip/$dir > ${dir/./_}.$alg
+cp=$( (echo target/scala-*/classes && find lib_managed/ -name \*.jar) | tr ' \n' ';' )
+scala -J-Xmx2g -cp "$cp" idents$alg.Main -d srczip/$dir > ${dir/./_}.$alg
