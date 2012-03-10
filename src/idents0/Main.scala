@@ -4,8 +4,11 @@ import java.io._
 import java.util.Scanner
 import scala.collection.mutable.HashMap
 import scala.collection.immutable.TreeMap
+import java.util.regex.Pattern
 
 object Main {
+  
+  val delim = Pattern.compile("[^A-Za-z0-9_]+")
   val result = new HashMap[String, TreeMap[String, Int]]
 
   def processToken(f: String, token : String) {
@@ -15,8 +18,7 @@ object Main {
   }
 
   def processFile(f : File) {
-    val in = new java.util.Scanner(f)
-    in.useDelimiter("[^A-Za-z0-9_]+")
+    val in = new java.util.Scanner(f).useDelimiter(delim)
     while (in.hasNext) processToken(f.getPath, in.next)
   }
 

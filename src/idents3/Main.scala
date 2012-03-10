@@ -7,8 +7,10 @@ import scala.collection.mutable.Queue
 import scala.collection.immutable.TreeMap
 import scala.actors._
 import scala.actors.Actor._
+import java.util.regex.Pattern
 
 object Main {
+  val delim = Pattern.compile("[^A-Za-z0-9_]+")
 
 	val assert = false
 	val debug = false
@@ -33,8 +35,7 @@ object Main {
 			react {
 				case f : File =>
 					var result = new MResult
-					val in = new java.util.Scanner(f)
-					in.useDelimiter("[^A-Za-z0-9_]+")
+					val in = new java.util.Scanner(f).useDelimiter(delim)
 					var count = 0
 					while (in.hasNext) { processToken(result, in.next, f.getPath, 1); count+=1 }
 					if (assert) if (count != deepCount(result)) System.err.println("error " + deepCount(result) + " != " + count)

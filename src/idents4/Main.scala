@@ -7,8 +7,10 @@ import java.util.concurrent.ForkJoinTask
 import java.util.concurrent.RecursiveTask
 import scala.collection.mutable.HashMap
 import scala.collection.immutable.TreeMap
+import java.util.regex.Pattern
 
 object Main {
+  val delim = Pattern.compile("[^A-Za-z0-9_]+")
 
   type Result = HashMap[String, TreeMap[String, Int]]
 
@@ -23,8 +25,7 @@ object Main {
   class FileTask(f : File) extends ResultTask {
 	  def compute = {
 		  val result = new Result
-	 	  val in = new java.util.Scanner(f)
-	 	  in.useDelimiter("[^A-Za-z0-9_]+")
+		  val in = new java.util.Scanner(f).useDelimiter(delim)
 	 	  while (in.hasNext) processToken(result, in.next, f.getPath, 1)
 		  result
 	   }

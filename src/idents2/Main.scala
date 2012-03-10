@@ -7,8 +7,10 @@ import scala.collection.mutable.HashMap
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ThreadRunner
 import scala.concurrent.Lock
+import java.util.regex.Pattern
 
 object Main {
+  val delim = Pattern.compile("[^A-Za-z0-9_]+")
   val result = new HashMap[String, TreeMap[String, Int]]
 
   val runner = new ThreadRunner()
@@ -49,8 +51,7 @@ object Main {
   }
 
   def processFile(f : File) {
-    val in = new java.util.Scanner(f)
-    in.useDelimiter("[^A-Za-z0-9_]+")
+    val in = new java.util.Scanner(f).useDelimiter(delim)
     while (in.hasNext) processToken(f.getPath, in.next)
   }
 

@@ -13,8 +13,10 @@ import akka.dispatch.Promise
 import akka.dispatch.Await
 import akka.util.duration._
 import akka.util.Timeout
+import java.util.regex.Pattern
 
 object Main {
+  val delim = Pattern.compile("[^A-Za-z0-9_]+")
   
   val actorSystem = ActorSystem("rocket")
 
@@ -40,8 +42,7 @@ object Main {
 		def receive = {
 			case f : File =>
 				var result = new MResult
-				val in = new java.util.Scanner(f)
-				in.useDelimiter("[^A-Za-z0-9_]+")
+				val in = new java.util.Scanner(f).useDelimiter(delim)
 				var count = 0
 				while (in.hasNext) { processToken(result, in.next, f.getPath, 1); count+=1 }
 				if (assert) if (count != deepCount(result)) System.err.println("error " + deepCount(result) + " != " + count)
