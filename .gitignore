@@ -1,5 +1,8 @@
 /target/
 /project/target/
+/.classpath
+/.project
+/.settings/org.scala-ide.sdt.core.prefs
 bin
 srczip
 .cache
