@@ -1,6 +1,6 @@
 bin
 srczip
-.scala_dependencies
+.cache
 *.0
 *.1
 *.2
