@@ -2,9 +2,11 @@ package idents4
 
 import java.io._
 import java.util.Scanner
+import java.util.concurrent.ForkJoinPool
+import java.util.concurrent.ForkJoinTask
+import java.util.concurrent.RecursiveTask
 import scala.collection.mutable.HashMap
 import scala.collection.immutable.TreeMap
-import jsr166y._
 
 object Main {
 
